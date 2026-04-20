@@ -132,7 +132,7 @@
 
         .controls-wrap {
             display: grid;
-            grid-template-columns: 1.3fr 1fr;
+            grid-template-columns: 1.75fr 1fr;
             gap: 14px;
         }
 
@@ -152,7 +152,7 @@
 
         .control-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
             align-items: end;
         }
@@ -246,6 +246,13 @@
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
         }
 
         .inline-info {
@@ -413,7 +420,8 @@
 
             .control-grid,
             .stats,
-            .nav-grid {
+            .nav-grid,
+            .download-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -490,19 +498,16 @@
                         <label for="batch">Batch Index</label>
                         <input id="batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
                     </div>
-
-                    <div class="field">
-                        <label for="batch_size">Batch Size</label>
-                        <input id="batch_size" name="batch_size" type="number" min="1" max="200" value="{{ batch_size }}" required />
-                    </div>
                 </div>
+
+                <input type="hidden" id="batch_size" name="batch_size" value="{{ batch_size }}" />
 
                 <div class="btn-row">
                     <button class="btn btn-primary" type="submit">Generate / View Data</button>
-                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
-                    <button class="btn btn-link" type="button" id="download-batch">Download This Batch</button>
                     <button class="btn btn-warm" type="button" id="random-seed">Random Seed</button>
                     <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset to Batch 0</a>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0), batch_size=batch_size) }}">Previous Batch</a>
+                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
                 </div>
 
                 <p class="inline-info">
@@ -515,17 +520,30 @@
             </form>
 
             <aside class="panel nav-card">
-                <h2 class="section-title">Quick Navigation</h2>
-                <div class="nav-grid">
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0), batch_size=batch_size) }}">Previous Batch</a>
-                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
-                    <a class="btn btn-link" href="{{ url_for('export_csv', locale=selected_locale, seed=seed, batch=batch_index, batch_size=batch_size) }}">Export Batch CSV</a>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale='en_US', seed=42, batch=0, batch_size=10) }}">Load Default View</a>
-                </div>
+                <h2 class="section-title">Download by Seed + Batch</h2>
 
-                <p class="inline-info">
-                    Tip: for reproducible demos, keep locale and seed fixed, then advance by batch index.
-                </p>
+                <form class="download-form" action="/export.csv" method="get">
+                    <input type="hidden" id="download-locale" name="locale" value="{{ selected_locale }}" />
+                    <input type="hidden" name="batch_size" value="{{ batch_size }}" />
+
+                    <div class="download-grid">
+                        <div class="field">
+                            <label for="download-seed">Seed</label>
+                            <input id="download-seed" name="seed" type="number" min="0" value="{{ seed }}" required />
+                        </div>
+
+                        <div class="field">
+                            <label for="download-batch">Batch Index</label>
+                            <input id="download-batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-link" type="submit">Download This Batch</button>
+                    </div>
+                </form>
+
+                <p class="inline-info">Active locale for download: {{ selected_locale_name }} ({{ selected_locale }})</p>
             </aside>
         </section>
 
@@ -578,13 +596,13 @@
 
     <script>
         (function () {
-            const controlForm = document.getElementById("control-form");
             const localeInput = document.getElementById("locale");
             const seedInput = document.getElementById("seed");
             const batchInput = document.getElementById("batch");
-            const batchSizeInput = document.getElementById("batch_size");
+            const downloadLocaleInput = document.getElementById("download-locale");
+            const downloadSeedInput = document.getElementById("download-seed");
+            const downloadBatchInput = document.getElementById("download-batch");
             const randomSeedButton = document.getElementById("random-seed");
-            const downloadBatchButton = document.getElementById("download-batch");
 
             if (!seedInput || !randomSeedButton) {
                 return;
@@ -594,22 +612,29 @@
                 const maxSeed = 2147483647;
                 const nextSeed = Math.floor(Math.random() * maxSeed);
                 seedInput.value = String(nextSeed);
+                if (downloadSeedInput) {
+                    downloadSeedInput.value = String(nextSeed);
+                }
                 seedInput.focus();
             });
 
-            if (!controlForm || !localeInput || !batchInput || !batchSizeInput || !downloadBatchButton) {
-                return;
+            if (seedInput && downloadSeedInput) {
+                seedInput.addEventListener("input", function () {
+                    downloadSeedInput.value = seedInput.value;
+                });
             }
 
-            downloadBatchButton.addEventListener("click", function () {
-                const params = new URLSearchParams({
-                    locale: localeInput.value,
-                    seed: seedInput.value,
-                    batch: batchInput.value,
-                    batch_size: batchSizeInput.value
+            if (batchInput && downloadBatchInput) {
+                batchInput.addEventListener("input", function () {
+                    downloadBatchInput.value = batchInput.value;
                 });
-                window.location.href = "/export.csv?" + params.toString();
-            });
+            }
+
+            if (localeInput && downloadLocaleInput) {
+                localeInput.addEventListener("change", function () {
+                    downloadLocaleInput.value = localeInput.value;
+                });
+            }
         })();
     </script>
 </body>
