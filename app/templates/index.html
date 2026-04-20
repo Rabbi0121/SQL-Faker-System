@@ -242,6 +242,12 @@
             border: 1px solid #bfe8f0;
         }
 
+        .btn-disabled {
+            opacity: 0.56;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
         .nav-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -491,27 +497,32 @@
 
                     <div class="field">
                         <label for="seed">Seed</label>
-                        <input id="seed" name="seed" type="number" min="0" value="{{ seed }}" required />
+                        <input id="seed" name="seed" type="number" min="{{ min_seed }}" max="{{ max_seed }}" value="{{ seed }}" required />
                     </div>
 
                     <div class="field">
                         <label for="batch">Batch Index</label>
-                        <input id="batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
+                        <input id="batch" name="batch" type="number" min="{{ min_batch_index }}" max="{{ max_batch_index }}" value="{{ batch_index }}" required />
                     </div>
                 </div>
 
                 <input type="hidden" id="batch_size" name="batch_size" value="{{ batch_size }}" />
 
                 <div class="btn-row">
-                    <button class="btn btn-primary" type="submit">Generate / View Data</button>
-                    <button class="btn btn-warm" type="button" id="random-seed">Random Seed</button>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset to Batch 0</a>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0), batch_size=batch_size) }}">Previous Batch</a>
-                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
+                    <button class="btn btn-primary" type="submit">View Selected Batch</button>
+                    <button class="btn btn-link" type="submit" formaction="/generate" formmethod="post">Generate From Seed (Batch 0)</button>
+                    <button class="btn btn-warm" type="button" id="random-seed">Fill Random Seed</button>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset Batch to 0</a>
+                    {% if batch_index > 0 %}
+                        <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1), batch_size=batch_size) }}">Previous Batch</a>
+                    {% else %}
+                        <span class="btn btn-soft btn-disabled" aria-disabled="true">Previous Batch</span>
+                    {% endif %}
+                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1 if batch_index < max_batch_index else max_batch_index), batch_size=batch_size) }}">Next Batch</a>
                 </div>
 
                 <p class="inline-info">
-                    Loaded locales: {{ locale_count }} | rows in current batch: {{ user_count }} | batch size: {{ batch_size }}
+                    Loaded locales: {{ locale_count }} | rows in current batch: {{ user_count }} | batch size: {{ batch_size }} | max batch index: {{ max_batch_index }}
                 </p>
 
                 {% if error_message %}
@@ -529,12 +540,12 @@
                     <div class="download-grid">
                         <div class="field">
                             <label for="download-seed">Seed</label>
-                            <input id="download-seed" name="seed" type="number" min="0" value="{{ seed }}" required />
+                            <input id="download-seed" name="seed" type="number" min="{{ min_seed }}" max="{{ max_seed }}" value="{{ seed }}" required />
                         </div>
 
                         <div class="field">
                             <label for="download-batch">Batch Index</label>
-                            <input id="download-batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
+                            <input id="download-batch" name="batch" type="number" min="{{ min_batch_index }}" max="{{ max_batch_index }}" value="{{ batch_index }}" required />
                         </div>
                     </div>
 
@@ -596,6 +607,7 @@
 
     <script>
         (function () {
+            const controlForm = document.getElementById("control-form");
             const localeInput = document.getElementById("locale");
             const seedInput = document.getElementById("seed");
             const batchInput = document.getElementById("batch");
@@ -603,14 +615,17 @@
             const downloadSeedInput = document.getElementById("download-seed");
             const downloadBatchInput = document.getElementById("download-batch");
             const randomSeedButton = document.getElementById("random-seed");
+            const maxSeedValue = Number(seedInput ? seedInput.max : "2147483647") || 2147483647;
+            const minSeedValue = Number(seedInput ? seedInput.min : "0") || 0;
+            const maxBatchValue = Number(batchInput ? batchInput.max : "1000000") || 1000000;
+            const minBatchValue = Number(batchInput ? batchInput.min : "0") || 0;
 
             if (!seedInput || !randomSeedButton) {
                 return;
             }
 
             randomSeedButton.addEventListener("click", function () {
-                const maxSeed = 2147483647;
-                const nextSeed = Math.floor(Math.random() * maxSeed);
+                const nextSeed = Math.floor(Math.random() * (maxSeedValue - minSeedValue + 1)) + minSeedValue;
                 seedInput.value = String(nextSeed);
                 if (downloadSeedInput) {
                     downloadSeedInput.value = String(nextSeed);
@@ -633,6 +648,35 @@
             if (localeInput && downloadLocaleInput) {
                 localeInput.addEventListener("change", function () {
                     downloadLocaleInput.value = localeInput.value;
+                });
+            }
+
+            if (controlForm && seedInput && batchInput) {
+                controlForm.addEventListener("submit", function (event) {
+                    const parsedSeed = Number.parseInt(seedInput.value || "0", 10);
+                    const parsedBatch = Number.parseInt(batchInput.value || "0", 10);
+                    const normalizedSeed = Number.isNaN(parsedSeed) ? minSeedValue : Math.min(maxSeedValue, Math.max(minSeedValue, parsedSeed));
+                    const normalizedBatch = Number.isNaN(parsedBatch) ? minBatchValue : Math.min(maxBatchValue, Math.max(minBatchValue, parsedBatch));
+
+                    seedInput.value = String(normalizedSeed);
+                    batchInput.value = String(normalizedBatch);
+                    if (downloadSeedInput) {
+                        downloadSeedInput.value = String(normalizedSeed);
+                    }
+                    if (downloadBatchInput) {
+                        downloadBatchInput.value = String(normalizedBatch);
+                    }
+
+                    const submitter = event.submitter;
+                    if (submitter && submitter.tagName === "BUTTON") {
+                        submitter.setAttribute("disabled", "disabled");
+                        submitter.dataset.originalText = submitter.textContent || "";
+                        submitter.textContent = "Loading...";
+                        setTimeout(function () {
+                            submitter.removeAttribute("disabled");
+                            submitter.textContent = submitter.dataset.originalText || submitter.textContent || "";
+                        }, 8000);
+                    }
                 });
             }
         })();

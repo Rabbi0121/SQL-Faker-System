@@ -17,17 +17,28 @@ DEFAULT_SEED = 42
 DEFAULT_BATCH_SIZE = 10
 MIN_BATCH_SIZE = 1
 MAX_BATCH_SIZE = 200
+MIN_SEED = 0
+MAX_SEED = 2_147_483_647
+MIN_BATCH_INDEX = 0
+MAX_BATCH_INDEX = 1_000_000
 
 app = Flask(__name__)
 
 
-def parse_int(raw_value: Any, default: int, min_value: int | None = None) -> int:
+def parse_int(
+    raw_value: Any,
+    default: int,
+    min_value: int | None = None,
+    max_value: int | None = None,
+) -> int:
     try:
         value = int(raw_value)
     except (TypeError, ValueError):
         return default
 
     if min_value is not None and value < min_value:
+        return default
+    if max_value is not None and value > max_value:
         return default
 
     return value
@@ -60,12 +71,30 @@ def load_batch(
     return list(conn.execute(query, (locale, seed, batch_index, batch_size)).fetchall())
 
 
+def normalize_locale(locale: str, locales: list[dict[str, Any]]) -> tuple[str, str]:
+    if not locales:
+        return locale, locale
+
+    locale_name_map = {entry["locale_code"]: entry["locale_name"] for entry in locales}
+    locale_codes = set(locale_name_map)
+    if locale not in locale_codes:
+        locale = DEFAULT_LOCALE if DEFAULT_LOCALE in locale_codes else locales[0]["locale_code"]
+
+    return locale, locale_name_map.get(locale, locale)
+
+
 @app.get("/")
 def index() -> str:
     locale = request.args.get("locale", DEFAULT_LOCALE)
-    seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=0)
-    batch_index = parse_int(request.args.get("batch"), 0, min_value=0)
-    batch_size = parse_int(request.args.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=MIN_SEED)
+    batch_index = parse_int(request.args.get("batch"), MIN_BATCH_INDEX, min_value=MIN_BATCH_INDEX)
+    batch_size = parse_int(
+        request.args.get("batch_size"),
+        DEFAULT_BATCH_SIZE,
+        min_value=MIN_BATCH_SIZE,
+    )
+    seed = max(MIN_SEED, min(MAX_SEED, seed))
+    batch_index = max(MIN_BATCH_INDEX, min(MAX_BATCH_INDEX, batch_index))
     batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
 
     users: list[dict[str, Any]] = []
@@ -78,14 +107,8 @@ def index() -> str:
     try:
         with get_connection() as conn:
             locales = list_locales(conn)
-            locale_name_map = {entry["locale_code"]: entry["locale_name"] for entry in locales}
-            locale_codes = {entry["locale_code"] for entry in locales}
-
-            if locale not in locale_codes and locales:
-                locale = DEFAULT_LOCALE if DEFAULT_LOCALE in locale_codes else locales[0]["locale_code"]
-
+            locale, active_locale_name = normalize_locale(locale, locales)
             users = load_batch(conn, locale, seed, batch_index, batch_size)
-            active_locale_name = locale_name_map.get(locale, locale)
     except Exception as exc:  # pragma: no cover - runtime feedback path
         error_message = str(exc)
 
@@ -108,6 +131,10 @@ def index() -> str:
         batch_end=batch_end,
         locale_count=len(locales),
         user_count=len(users),
+        min_seed=MIN_SEED,
+        max_seed=MAX_SEED,
+        min_batch_index=MIN_BATCH_INDEX,
+        max_batch_index=MAX_BATCH_INDEX,
         error_message=error_message,
     )
 
@@ -115,26 +142,38 @@ def index() -> str:
 @app.post("/generate")
 def generate() -> Any:
     locale = request.form.get("locale", DEFAULT_LOCALE)
-    seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=0)
-    batch_size = parse_int(request.form.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=MIN_SEED)
+    batch_size = parse_int(
+        request.form.get("batch_size"),
+        DEFAULT_BATCH_SIZE,
+        min_value=MIN_BATCH_SIZE,
+    )
+    seed = max(MIN_SEED, min(MAX_SEED, seed))
     batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
-    return redirect(url_for("index", locale=locale, seed=seed, batch=0, batch_size=batch_size))
+    return redirect(url_for("index", locale=locale, seed=seed, batch=MIN_BATCH_INDEX, batch_size=batch_size))
 
 
 @app.post("/next")
 def next_batch() -> Any:
     locale = request.form.get("locale", DEFAULT_LOCALE)
-    seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=0)
-    batch_index = parse_int(request.form.get("batch_index"), 0, min_value=0)
-    batch_size = parse_int(request.form.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=MIN_SEED)
+    batch_index = parse_int(request.form.get("batch_index"), MIN_BATCH_INDEX, min_value=MIN_BATCH_INDEX)
+    batch_size = parse_int(
+        request.form.get("batch_size"),
+        DEFAULT_BATCH_SIZE,
+        min_value=MIN_BATCH_SIZE,
+    )
+    seed = max(MIN_SEED, min(MAX_SEED, seed))
+    batch_index = max(MIN_BATCH_INDEX, min(MAX_BATCH_INDEX, batch_index))
     batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
+    next_index = min(MAX_BATCH_INDEX, batch_index + 1)
 
     return redirect(
         url_for(
             "index",
             locale=locale,
             seed=seed,
-            batch=batch_index + 1,
+            batch=next_index,
             batch_size=batch_size,
         )
     )
@@ -143,13 +182,21 @@ def next_batch() -> Any:
 @app.get("/export.csv")
 def export_csv() -> Response:
     locale = request.args.get("locale", DEFAULT_LOCALE)
-    seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=0)
-    batch_index = parse_int(request.args.get("batch"), 0, min_value=0)
-    batch_size = parse_int(request.args.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=MIN_SEED)
+    batch_index = parse_int(request.args.get("batch"), MIN_BATCH_INDEX, min_value=MIN_BATCH_INDEX)
+    batch_size = parse_int(
+        request.args.get("batch_size"),
+        DEFAULT_BATCH_SIZE,
+        min_value=MIN_BATCH_SIZE,
+    )
+    seed = max(MIN_SEED, min(MAX_SEED, seed))
+    batch_index = max(MIN_BATCH_INDEX, min(MAX_BATCH_INDEX, batch_index))
     batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
 
     users: list[dict[str, Any]] = []
     with get_connection() as conn:
+        locales = list_locales(conn)
+        locale, _ = normalize_locale(locale, locales)
         users = load_batch(conn, locale, seed, batch_index, batch_size)
 
     output = StringIO()
@@ -201,6 +248,6 @@ def export_csv() -> Response:
 
 
 if __name__ == "__main__":
-    port = parse_int(os.getenv("PORT"), 8000, min_value=1)
+    port = parse_int(os.getenv("PORT"), 8000, min_value=1, max_value=65535)
     debug_mode = os.getenv("FLASK_DEBUG", "0") == "1"
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
