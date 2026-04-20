@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQL Faker Contacts</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@500;700&display=swap");
+
+        :root {
+            color-scheme: light;
+            --bg-base: #f6f8fc;
+            --bg-accent-1: #d6f4ff;
+            --bg-accent-2: #ffe9cc;
+            --panel: #ffffff;
+            --text: #102039;
+            --muted: #55657c;
+            --line: #d9e0ea;
+            --brand: #0f8f9f;
+            --brand-strong: #0b6f7c;
+            --brand-warm: #ef8a29;
+            --danger: #bc2d2d;
+            --shadow-soft: 0 12px 30px rgba(16, 32, 57, 0.09);
+            --shadow-strong: 0 16px 35px rgba(12, 31, 57, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Manrope", "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 8% 12%, var(--bg-accent-1), transparent 36%),
+                radial-gradient(circle at 92% 18%, var(--bg-accent-2), transparent 42%),
+                linear-gradient(160deg, #f9fbff 0%, var(--bg-base) 100%);
+        }
+
+        .shell {
+            width: min(1240px, 95vw);
+            margin: 22px auto 28px;
+            display: grid;
+            gap: 16px;
+            animation: reveal-up 420ms ease-out;
+        }
+
+        .panel {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -60px;
+            top: -70px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(15, 143, 159, 0.26), rgba(15, 143, 159, 0));
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0b6f7c;
+            font-weight: 800;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-family: "Sora", "Manrope", sans-serif;
+            font-size: clamp(1.55rem, 2vw, 2.05rem);
+            line-height: 1.2;
+        }
+
+        .hero p {
+            margin: 0;
+            max-width: 830px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 12px;
+            border: 1px solid #dce6f1;
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(240, 248, 252, 0.96));
+            animation: reveal-up 380ms ease-out;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #5a6e87;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0d2847;
+            word-break: break-word;
+        }
+
+        .controls-wrap {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 14px;
+        }
+
+        .control-card,
+        .nav-card {
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .section-title {
+            margin: 0;
+            font-family: "Sora", "Manrope", sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.01em;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.82rem;
+            color: #5f738e;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        input,
+        select,
+        .btn,
+        button {
+            font: inherit;
+            border-radius: 10px;
+        }
+
+        input,
+        select {
+            border: 1px solid #cbd7e6;
+            background: #fff;
+            color: var(--text);
+            padding: 11px 12px;
+            min-height: 44px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 2px solid #8ad8e0;
+            outline-offset: 1px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn,
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            border: none;
+            padding: 10px 14px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 800;
+            transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+        }
+
+        .btn:hover,
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+            box-shadow: 0 8px 20px rgba(15, 143, 159, 0.34);
+        }
+
+        .btn-warm {
+            color: #fff;
+            background: linear-gradient(135deg, #f39b2f, var(--brand-warm));
+            box-shadow: 0 8px 20px rgba(239, 138, 41, 0.3);
+        }
+
+        .btn-soft {
+            color: #183a61;
+            background: #edf3fb;
+            border: 1px solid #cfdded;
+        }
+
+        .btn-link {
+            color: #0d4f73;
+            background: #eaf7fb;
+            border: 1px solid #bfe8f0;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .inline-info {
+            font-size: 0.88rem;
+            color: #4e6381;
+            margin: 0;
+        }
+
+        .error {
+            margin: 0;
+            padding: 10px 12px;
+            border: 1px solid #ffc4c4;
+            border-radius: 10px;
+            background: #fff1f1;
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .table-panel {
+            padding: 0;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            min-height: 360px;
+        }
+
+        .table-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #dbe5ef;
+            background: linear-gradient(90deg, #f4fbff, #fff5eb);
+        }
+
+        .table-head h2 {
+            margin: 0;
+            font-family: "Sora", "Manrope", sans-serif;
+            font-size: 1rem;
+        }
+
+        .table-sub {
+            margin: 0;
+            font-size: 0.84rem;
+            color: #557091;
+            font-weight: 700;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            max-height: min(74vh, 700px);
+            padding: 0 14px 14px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid #e2e9f2;
+            padding: 10px 10px;
+            background: #fff;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #e7f5fb;
+            color: #123858;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        tbody tr:nth-child(even) td {
+            background: #fcfeff;
+        }
+
+        tbody tr {
+            animation: row-in 300ms ease both;
+        }
+
+        tbody tr:nth-child(2) { animation-delay: 20ms; }
+        tbody tr:nth-child(3) { animation-delay: 40ms; }
+        tbody tr:nth-child(4) { animation-delay: 60ms; }
+        tbody tr:nth-child(5) { animation-delay: 80ms; }
+        tbody tr:nth-child(6) { animation-delay: 100ms; }
+        tbody tr:nth-child(7) { animation-delay: 120ms; }
+        tbody tr:nth-child(8) { animation-delay: 140ms; }
+        tbody tr:nth-child(9) { animation-delay: 160ms; }
+        tbody tr:nth-child(10) { animation-delay: 180ms; }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            color: #0e5460;
+            background: #dff5f8;
+            border: 1px solid #b8e7ed;
+            white-space: nowrap;
+        }
+
+        @keyframes reveal-up {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes row-in {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .controls-wrap {
+                grid-template-columns: 1fr;
+            }
+
+            .control-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                width: min(100%, 96vw);
+                margin-top: 14px;
+            }
+
+            .hero,
+            .control-card,
+            .nav-card {
+                padding: 14px;
+            }
+
+            .control-grid,
+            .stats,
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn,
+            button,
+            input,
+            select {
+                width: 100%;
+            }
+
+            .table-wrap {
+                padding: 0 10px 10px;
+            }
+
+            th,
+            td {
+                padding: 9px 8px;
+                font-size: 0.82rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="panel hero">
+            <div class="eyebrow">SQL Faker System</div>
+            <h1>Generate deterministic fake contacts with a cleaner, faster workflow</h1>
+            <p>
+                The data engine runs inside PostgreSQL stored procedures. Change locale, seed, or batch index to explore reproducible results while keeping realism and format variation.
+            </p>
+
+            <div class="stats">
+                <article class="stat-card">
+                    <span class="stat-label">Active Locale</span>
+                    <span class="stat-value">{{ selected_locale_name }} ({{ selected_locale }})</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Seed</span>
+                    <span class="stat-value">{{ seed }}</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Current Batch</span>
+                    <span class="stat-value">{{ batch_index }}</span>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-label">Stream Positions</span>
+                    <span class="stat-value">{{ batch_start }} to {{ batch_end }}</span>
+                </article>
+            </div>
+        </section>
+
+        <section class="controls-wrap">
+            <form class="panel control-card" action="/" method="get">
+                <h2 class="section-title">Generator Controls</h2>
+
+                <div class="control-grid">
+                    <div class="field">
+                        <label for="locale">Locale</label>
+                        <select id="locale" name="locale" required>
+                            {% for locale in locales %}
+                                <option value="{{ locale.locale_code }}" {% if locale.locale_code == selected_locale %}selected{% endif %}>
+                                    {{ locale.locale_name }} ({{ locale.locale_code }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="seed">Seed</label>
+                        <input id="seed" name="seed" type="number" min="0" value="{{ seed }}" required />
+                    </div>
+
+                    <div class="field">
+                        <label for="batch">Batch Index</label>
+                        <input id="batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" type="submit">Apply Parameters</button>
+                    <button class="btn btn-warm" type="button" id="random-seed">Random Seed</button>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0) }}">Reset to Batch 0</a>
+                </div>
+
+                <p class="inline-info">
+                    Loaded locales: {{ locale_count }} | rows in current batch: {{ user_count }} | batch size: {{ batch_size }}
+                </p>
+
+                {% if error_message %}
+                    <p class="error">{{ error_message }}</p>
+                {% endif %}
+            </form>
+
+            <aside class="panel nav-card">
+                <h2 class="section-title">Quick Navigation</h2>
+                <div class="nav-grid">
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0)) }}">Previous Batch</a>
+                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1)) }}">Next Batch</a>
+                    <a class="btn btn-link" href="{{ url_for('export_csv', locale=selected_locale, seed=seed, batch=batch_index) }}">Export Batch CSV</a>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale='en_US', seed=42, batch=0) }}">Load Default View</a>
+                </div>
+
+                <p class="inline-info">
+                    Tip: for reproducible demos, keep locale and seed fixed, then advance by batch index.
+                </p>
+            </aside>
+        </section>
+
+        <section class="panel table-panel">
+            <div class="table-head">
+                <h2>Generated Contacts</h2>
+                <p class="table-sub">Batch {{ batch_index }} | positions {{ batch_start }} to {{ batch_end }}</p>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Full Name</th>
+                            <th>Address</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Height (cm)</th>
+                            <th>Weight (kg)</th>
+                            <th>Eye Color</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.position_in_stream }}</td>
+                                <td>{{ user.full_name }}</td>
+                                <td>{{ user.address }}</td>
+                                <td>{{ "%.6f"|format(user.latitude) }}</td>
+                                <td>{{ "%.6f"|format(user.longitude) }}</td>
+                                <td>{{ user.height_cm }}</td>
+                                <td>{{ user.weight_kg }}</td>
+                                <td><span class="chip">{{ user.eye_color }}</span></td>
+                                <td>{{ user.phone }}</td>
+                                <td>{{ user.email }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="10">No data loaded.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            const seedInput = document.getElementById("seed");
+            const randomSeedButton = document.getElementById("random-seed");
+            if (!seedInput || !randomSeedButton) {
+                return;
+            }
+
+            randomSeedButton.addEventListener("click", function () {
+                const maxSeed = 2147483647;
+                const nextSeed = Math.floor(Math.random() * maxSeed);
+                seedInput.value = String(nextSeed);
+                seedInput.focus();
+            });
+        })();
+    </script>
+</body>
+</html>
