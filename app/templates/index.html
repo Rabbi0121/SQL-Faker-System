@@ -152,7 +152,7 @@
 
         .control-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
             align-items: end;
         }
@@ -466,7 +466,7 @@
         </section>
 
         <section class="controls-wrap">
-            <form class="panel control-card" action="/" method="get">
+            <form class="panel control-card" id="control-form" action="/" method="get">
                 <h2 class="section-title">Generator Controls</h2>
 
                 <div class="control-grid">
@@ -490,12 +490,18 @@
                         <label for="batch">Batch Index</label>
                         <input id="batch" name="batch" type="number" min="0" value="{{ batch_index }}" required />
                     </div>
+
+                    <div class="field">
+                        <label for="batch_size">Batch Size</label>
+                        <input id="batch_size" name="batch_size" type="number" min="1" max="200" value="{{ batch_size }}" required />
+                    </div>
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn btn-primary" type="submit">Apply Parameters</button>
+                    <button class="btn btn-primary" type="submit">View Data</button>
+                    <button class="btn btn-link" type="button" id="download-batch">Download This Batch</button>
                     <button class="btn btn-warm" type="button" id="random-seed">Random Seed</button>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0) }}">Reset to Batch 0</a>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset to Batch 0</a>
                 </div>
 
                 <p class="inline-info">
@@ -510,10 +516,10 @@
             <aside class="panel nav-card">
                 <h2 class="section-title">Quick Navigation</h2>
                 <div class="nav-grid">
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0)) }}">Previous Batch</a>
-                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1)) }}">Next Batch</a>
-                    <a class="btn btn-link" href="{{ url_for('export_csv', locale=selected_locale, seed=seed, batch=batch_index) }}">Export Batch CSV</a>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale='en_US', seed=42, batch=0) }}">Load Default View</a>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1 if batch_index > 0 else 0), batch_size=batch_size) }}">Previous Batch</a>
+                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
+                    <a class="btn btn-link" href="{{ url_for('export_csv', locale=selected_locale, seed=seed, batch=batch_index, batch_size=batch_size) }}">Export Batch CSV</a>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale='en_US', seed=42, batch=0, batch_size=10) }}">Load Default View</a>
                 </div>
 
                 <p class="inline-info">
@@ -525,7 +531,7 @@
         <section class="panel table-panel">
             <div class="table-head">
                 <h2>Generated Contacts</h2>
-                <p class="table-sub">Batch {{ batch_index }} | positions {{ batch_start }} to {{ batch_end }}</p>
+                <p class="table-sub">Batch {{ batch_index }} | size {{ batch_size }} | positions {{ batch_start }} to {{ batch_end }}</p>
             </div>
 
             <div class="table-wrap">
@@ -571,8 +577,14 @@
 
     <script>
         (function () {
+            const controlForm = document.getElementById("control-form");
+            const localeInput = document.getElementById("locale");
             const seedInput = document.getElementById("seed");
+            const batchInput = document.getElementById("batch");
+            const batchSizeInput = document.getElementById("batch_size");
             const randomSeedButton = document.getElementById("random-seed");
+            const downloadBatchButton = document.getElementById("download-batch");
+
             if (!seedInput || !randomSeedButton) {
                 return;
             }
@@ -582,6 +594,20 @@
                 const nextSeed = Math.floor(Math.random() * maxSeed);
                 seedInput.value = String(nextSeed);
                 seedInput.focus();
+            });
+
+            if (!controlForm || !localeInput || !batchInput || !batchSizeInput || !downloadBatchButton) {
+                return;
+            }
+
+            downloadBatchButton.addEventListener("click", function () {
+                const params = new URLSearchParams({
+                    locale: localeInput.value,
+                    seed: seedInput.value,
+                    batch: batchInput.value,
+                    batch_size: batchSizeInput.value
+                });
+                window.location.href = "/export.csv?" + params.toString();
             });
         })();
     </script>

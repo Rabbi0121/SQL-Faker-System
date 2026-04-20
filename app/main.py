@@ -15,6 +15,8 @@ load_dotenv()
 DEFAULT_LOCALE = "en_US"
 DEFAULT_SEED = 42
 DEFAULT_BATCH_SIZE = 10
+MIN_BATCH_SIZE = 1
+MAX_BATCH_SIZE = 200
 
 app = Flask(__name__)
 
@@ -63,11 +65,13 @@ def index() -> str:
     locale = request.args.get("locale", DEFAULT_LOCALE)
     seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=0)
     batch_index = parse_int(request.args.get("batch"), 0, min_value=0)
+    batch_size = parse_int(request.args.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
 
     users: list[dict[str, Any]] = []
     locales: list[dict[str, Any]] = []
     error_message: str | None = None
-    batch_start = batch_index * DEFAULT_BATCH_SIZE
+    batch_start = batch_index * batch_size
     batch_end = batch_start
     active_locale_name = locale
 
@@ -80,7 +84,7 @@ def index() -> str:
             if locale not in locale_codes and locales:
                 locale = DEFAULT_LOCALE if DEFAULT_LOCALE in locale_codes else locales[0]["locale_code"]
 
-            users = load_batch(conn, locale, seed, batch_index, DEFAULT_BATCH_SIZE)
+            users = load_batch(conn, locale, seed, batch_index, batch_size)
             active_locale_name = locale_name_map.get(locale, locale)
     except Exception as exc:  # pragma: no cover - runtime feedback path
         error_message = str(exc)
@@ -89,7 +93,7 @@ def index() -> str:
         batch_start = users[0]["position_in_stream"]
         batch_end = users[-1]["position_in_stream"]
     else:
-        batch_end = batch_start + DEFAULT_BATCH_SIZE - 1
+        batch_end = batch_start + batch_size - 1
 
     return render_template(
         "index.html",
@@ -99,7 +103,7 @@ def index() -> str:
         selected_locale_name=active_locale_name,
         seed=seed,
         batch_index=batch_index,
-        batch_size=DEFAULT_BATCH_SIZE,
+        batch_size=batch_size,
         batch_start=batch_start,
         batch_end=batch_end,
         locale_count=len(locales),
@@ -112,7 +116,9 @@ def index() -> str:
 def generate() -> Any:
     locale = request.form.get("locale", DEFAULT_LOCALE)
     seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=0)
-    return redirect(url_for("index", locale=locale, seed=seed, batch=0))
+    batch_size = parse_int(request.form.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
+    return redirect(url_for("index", locale=locale, seed=seed, batch=0, batch_size=batch_size))
 
 
 @app.post("/next")
@@ -120,6 +126,8 @@ def next_batch() -> Any:
     locale = request.form.get("locale", DEFAULT_LOCALE)
     seed = parse_int(request.form.get("seed"), DEFAULT_SEED, min_value=0)
     batch_index = parse_int(request.form.get("batch_index"), 0, min_value=0)
+    batch_size = parse_int(request.form.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
 
     return redirect(
         url_for(
@@ -127,6 +135,7 @@ def next_batch() -> Any:
             locale=locale,
             seed=seed,
             batch=batch_index + 1,
+            batch_size=batch_size,
         )
     )
 
@@ -136,10 +145,12 @@ def export_csv() -> Response:
     locale = request.args.get("locale", DEFAULT_LOCALE)
     seed = parse_int(request.args.get("seed"), DEFAULT_SEED, min_value=0)
     batch_index = parse_int(request.args.get("batch"), 0, min_value=0)
+    batch_size = parse_int(request.args.get("batch_size"), DEFAULT_BATCH_SIZE, min_value=MIN_BATCH_SIZE)
+    batch_size = max(MIN_BATCH_SIZE, min(MAX_BATCH_SIZE, batch_size))
 
     users: list[dict[str, Any]] = []
     with get_connection() as conn:
-        users = load_batch(conn, locale, seed, batch_index, DEFAULT_BATCH_SIZE)
+        users = load_batch(conn, locale, seed, batch_index, batch_size)
 
     output = StringIO()
     writer = csv.writer(output)
@@ -181,7 +192,7 @@ def export_csv() -> Response:
             ]
         )
 
-    filename = f"fake_contacts_{locale}_seed_{seed}_batch_{batch_index}.csv"
+    filename = f"fake_contacts_{locale}_seed_{seed}_batch_{batch_index}_size_{batch_size}.csv"
     return Response(
         output.getvalue(),
         mimetype="text/csv",
