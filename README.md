@@ -134,12 +134,3 @@ See:
 
 - `docs/stored_procedures.md`
 
-## Notes for Submission
-
-For your assignment package, include:
-
-1. Video demo recording of the running app.
-2. Link to stored procedure docs (`docs/stored_procedures.md` in your repo).
-3. Link to deployed web app.
-4. Benchmark output from `scripts/benchmark.py`.
-5. Your full name.
