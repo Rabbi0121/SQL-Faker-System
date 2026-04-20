@@ -1,7 +1,6 @@
 databases:
   - name: sql-faker-db
     databaseName: fake_contacts
-    user: postgres
     plan: free
 
 services:
