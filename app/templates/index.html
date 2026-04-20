@@ -498,7 +498,8 @@
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn btn-primary" type="submit">View Data</button>
+                    <button class="btn btn-primary" type="submit">Generate / View Data</button>
+                    <a class="btn btn-primary" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index + 1), batch_size=batch_size) }}">Next Batch</a>
                     <button class="btn btn-link" type="button" id="download-batch">Download This Batch</button>
                     <button class="btn btn-warm" type="button" id="random-seed">Random Seed</button>
                     <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset to Batch 0</a>
