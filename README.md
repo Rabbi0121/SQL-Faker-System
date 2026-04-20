@@ -81,6 +81,27 @@ Open:
 
 - `http://localhost:8000`
 
+## 4.2) Deploy on Render (Recommended for Public URL)
+
+This repo now includes a Render blueprint file:
+
+- `render.yaml`
+
+Deploy steps:
+
+1. Push the latest code to GitHub.
+2. In Render dashboard, click `New` -> `Blueprint`.
+3. Select this repository and branch `main`.
+4. Render will create:
+   - PostgreSQL database (`sql-faker-db`)
+   - Web service (`sql-faker-system`)
+5. After deployment finishes, open your Render URL.
+
+Notes:
+
+- `DATABASE_URL` is automatically connected from the managed Render database via `render.yaml`.
+- Web startup runs DB initialization automatically (`python scripts/init_db.py`) before serving.
+
 ## 5) Benchmark (Users/Second)
 
 Run benchmark for 100,000 users:
