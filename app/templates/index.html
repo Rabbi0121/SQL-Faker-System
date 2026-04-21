@@ -509,10 +509,9 @@
                 <input type="hidden" id="batch_size" name="batch_size" value="{{ batch_size }}" />
 
                 <div class="btn-row">
-                    <button class="btn btn-primary" type="submit">View Selected Batch</button>
-                    <button class="btn btn-link" type="submit" formaction="/generate" formmethod="post">Generate From Seed (Batch 0)</button>
-                    <button class="btn btn-warm" type="button" id="random-seed">Fill Random Seed</button>
-                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset Batch to 0</a>
+                    <button class="btn btn-primary" type="submit">Generate Data</button>
+                    <button class="btn btn-warm" id="random-generate" type="submit" formaction="/generate" formmethod="post">Random Generate</button>
+                    <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=0, batch_size=batch_size) }}">Reset Batch</a>
                     {% if batch_index > 0 %}
                         <a class="btn btn-soft" href="{{ url_for('index', locale=selected_locale, seed=seed, batch=(batch_index - 1), batch_size=batch_size) }}">Previous Batch</a>
                     {% else %}
@@ -614,24 +613,29 @@
             const downloadLocaleInput = document.getElementById("download-locale");
             const downloadSeedInput = document.getElementById("download-seed");
             const downloadBatchInput = document.getElementById("download-batch");
-            const randomSeedButton = document.getElementById("random-seed");
+            const randomGenerateButton = document.getElementById("random-generate");
             const maxSeedValue = Number(seedInput ? seedInput.max : "2147483647") || 2147483647;
             const minSeedValue = Number(seedInput ? seedInput.min : "0") || 0;
             const maxBatchValue = Number(batchInput ? batchInput.max : "1000000") || 1000000;
             const minBatchValue = Number(batchInput ? batchInput.min : "0") || 0;
 
-            if (!seedInput || !randomSeedButton) {
+            if (!seedInput || !batchInput || !controlForm) {
                 return;
             }
 
-            randomSeedButton.addEventListener("click", function () {
-                const nextSeed = Math.floor(Math.random() * (maxSeedValue - minSeedValue + 1)) + minSeedValue;
-                seedInput.value = String(nextSeed);
-                if (downloadSeedInput) {
-                    downloadSeedInput.value = String(nextSeed);
-                }
-                seedInput.focus();
-            });
+            if (randomGenerateButton) {
+                randomGenerateButton.addEventListener("click", function () {
+                    const nextSeed = Math.floor(Math.random() * (maxSeedValue - minSeedValue + 1)) + minSeedValue;
+                    seedInput.value = String(nextSeed);
+                    batchInput.value = String(minBatchValue);
+                    if (downloadSeedInput) {
+                        downloadSeedInput.value = String(nextSeed);
+                    }
+                    if (downloadBatchInput) {
+                        downloadBatchInput.value = String(minBatchValue);
+                    }
+                });
+            }
 
             if (seedInput && downloadSeedInput) {
                 seedInput.addEventListener("input", function () {
