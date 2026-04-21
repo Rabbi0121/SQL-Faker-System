@@ -21,6 +21,12 @@ All generated values for one person are derived from this deterministic key:
 If `(locale, seed, batch_index, index_in_batch)` is unchanged and lookup tables are unchanged,
 the generated user row is exactly the same.
 
+How `seed` and `batch_index` work:
+
+- `seed` controls the deterministic random stream for one scenario.
+- `batch_index` chooses which chunk in that stream to read (`0` = first batch, `1` = next, etc).
+- With fixed locale + seed, increasing `batch_index` gives new rows without randomness drift.
+
 ## 3) Data Model (Extensible by Locale)
 
 ### Table: `fake.locales`
@@ -258,7 +264,13 @@ Generation logic:
 - `en_US`:
   - Area code from curated `us_area_code` lexicon (realistic set).
   - Exchange generated with NANP-like constraints.
-  - Multiple output formats (`+1-AAA-EEE-LLLL`, `(AAA) EEE-LLLL`, etc).
+  - Multiple output formats such as:
+    - `+1-AAA-EEE-LLLL`
+    - `(AAA) EEE-LLLL`
+    - `AAA-EEE-LLLL`
+    - `AAA EEE LLLL`
+    - `+1 (AAA) EEE-LLLL`
+  - Dot-separated format (e.g. `260.512.8204`) is not used.
 - Other locales:
   - Uses locale `phone_pattern` + `render_pattern`.
 
@@ -316,6 +328,8 @@ Apply SQL files in order:
 - `sql/001_schema.sql`
 - `sql/002_seed_data.sql`
 - `sql/003_generators.sql`
+
+If SQL definitions change later, re-run the same initialization order to refresh functions/data.
 
 ## Step 2: List Available Locales
 

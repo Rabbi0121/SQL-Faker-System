@@ -56,6 +56,8 @@ Then apply SQL via Python script:
 python scripts/init_db.py
 ```
 
+If you change SQL generator files later (for example `sql/002_seed_data.sql` or `sql/003_generators.sql`), run `python scripts/init_db.py` again to apply updates.
+
 ## 4) Run Web App
 
 ```bash
@@ -68,8 +70,14 @@ Open:
 
 Behavior:
 
-- Choose locale + seed and generate first batch.
-- Click **Next Batch** to request the next deterministic chunk for same arguments.
+- Left control panel:
+  - **Generate Data**: loads exactly the selected `locale + seed + batch index`.
+  - **Random Generate**: creates a random seed, resets batch to `0`, and generates data.
+  - **Reset Batch**: keeps locale/seed and resets only batch to `0`.
+  - **Previous Batch / Next Batch**: deterministic batch navigation for the current locale/seed.
+- Right download panel:
+  - **Download This Batch** exports CSV using the right-side seed/batch inputs.
+  - Right-side seed/batch are intentionally independent from left-side inputs.
 
 ## 4.1) Run with Docker Compose (Optional)
 
