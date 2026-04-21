@@ -611,8 +611,6 @@
             const seedInput = document.getElementById("seed");
             const batchInput = document.getElementById("batch");
             const downloadLocaleInput = document.getElementById("download-locale");
-            const downloadSeedInput = document.getElementById("download-seed");
-            const downloadBatchInput = document.getElementById("download-batch");
             const randomGenerateButton = document.getElementById("random-generate");
             const maxSeedValue = Number(seedInput ? seedInput.max : "2147483647") || 2147483647;
             const minSeedValue = Number(seedInput ? seedInput.min : "0") || 0;
@@ -628,24 +626,6 @@
                     const nextSeed = Math.floor(Math.random() * (maxSeedValue - minSeedValue + 1)) + minSeedValue;
                     seedInput.value = String(nextSeed);
                     batchInput.value = String(minBatchValue);
-                    if (downloadSeedInput) {
-                        downloadSeedInput.value = String(nextSeed);
-                    }
-                    if (downloadBatchInput) {
-                        downloadBatchInput.value = String(minBatchValue);
-                    }
-                });
-            }
-
-            if (seedInput && downloadSeedInput) {
-                seedInput.addEventListener("input", function () {
-                    downloadSeedInput.value = seedInput.value;
-                });
-            }
-
-            if (batchInput && downloadBatchInput) {
-                batchInput.addEventListener("input", function () {
-                    downloadBatchInput.value = batchInput.value;
                 });
             }
 
@@ -664,12 +644,6 @@
 
                     seedInput.value = String(normalizedSeed);
                     batchInput.value = String(normalizedBatch);
-                    if (downloadSeedInput) {
-                        downloadSeedInput.value = String(normalizedSeed);
-                    }
-                    if (downloadBatchInput) {
-                        downloadBatchInput.value = String(normalizedBatch);
-                    }
 
                     const submitter = event.submitter;
                     if (submitter && submitter.tagName === "BUTTON") {

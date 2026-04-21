@@ -269,7 +269,7 @@ SELECT 'en_US', 'phone_pattern', x
 FROM unnest(ARRAY[
     '+1-N##-N##-####',
     '(N##) N##-####',
-    'N##.N##.####',
+    'N##-N##-####',
     'N## N## ####',
     '1 (N##) N##-####'
 ]) AS x

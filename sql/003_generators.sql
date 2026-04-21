@@ -436,12 +436,12 @@ BEGIN
         ELSIF v_style = 2 THEN
             RETURN format('(%s) %s-%s', v_area, v_exchange, v_line);
         ELSIF v_style = 3 THEN
-            RETURN format('%s.%s.%s', v_area, v_exchange, v_line);
+            RETURN format('%s-%s-%s', v_area, v_exchange, v_line);
         ELSIF v_style = 4 THEN
             RETURN format('%s %s %s', v_area, v_exchange, v_line);
         END IF;
 
-        RETURN format('1 (%s) %s-%s', v_area, v_exchange, v_line);
+        RETURN format('+1 (%s) %s-%s', v_area, v_exchange, v_line);
     END IF;
 
     v_pattern := fake.pick_lexicon(p_locale, 'phone_pattern', p_key, 80);
